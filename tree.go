@@ -57,7 +57,7 @@ func (t *Tree) Walk(f WalkFunc) {
 
 		// call WalkFunc
 		if current.isKey() {
-			f(string(key), current.value)
+			f(string(key), current.getValue())
 		}
 
 		// push child nodes
@@ -94,14 +94,12 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 				rightChild := &node{}
 
 				leftChild := &node{
-					key: append([]byte{}, current.key[1:]...),
-					//value:    current.value,
+					key:      append([]byte{}, current.key[1:]...),
 					children: current.children,
 				}
 
 				current.key = []byte{current.key[0], key[idx]}
 				current.children = []*node{leftChild, rightChild}
-				//current.value = nil
 
 				current = rightChild
 			} else {
@@ -174,7 +172,7 @@ func (t *Tree) get(key []byte) (interface{}, bool) {
 		return nil, false
 	}
 
-	return current.value, true
+	return current.getValue(), true
 }
 
 func (t *Tree) find(key []byte) (*node, int, int) {

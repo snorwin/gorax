@@ -18,18 +18,6 @@ func (r node) getValue() interface{} {
 	return r.value
 }
 
-func (r node) getKeys() [][]byte {
-	if r.isCompressed() {
-		return [][]byte{r.key}
-	} else {
-		var ret [][]byte
-		for _, key := range r.key {
-			ret = append(ret, []byte{key})
-		}
-		return ret
-	}
-}
-
 func (r node) getKeysWithPrefix(prefix []byte) [][]byte {
 	if r.isCompressed() {
 		return [][]byte{append(prefix, r.key...)}

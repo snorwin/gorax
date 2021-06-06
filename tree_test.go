@@ -10,6 +10,34 @@ import (
 )
 
 var _ = Describe("Tree", func() {
+	Context("Insert", func() {
+		var (
+			t *gorax.Tree
+		)
+		BeforeEach(func() {
+			t = &gorax.Tree{}
+		})
+		It("should_insert_nil", func() {
+			key := "foo"
+
+			ok := t.Insert(key, nil)
+			Ω(ok).Should(BeTrue())
+
+			value, ok := t.Get(key)
+			Ω(ok).Should(BeTrue())
+			Ω(value).Should(BeNil())
+		})
+		It("should_overwrite", func() {
+			key := "foo"
+
+			Ω(t.Insert(key, "old")).Should(BeTrue())
+			Ω(t.Insert(key, "new")).Should(BeFalse())
+
+			value, ok := t.Get(key)
+			Ω(ok).Should(BeTrue())
+			Ω(value).Should(Equal("new"))
+		})
+	})
 	Context("Fuzzy_Insert", func() {
 		size := 1000
 
