@@ -9,3 +9,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 `gorax` is a Go [radix tree](https://en.wikipedia.org/wiki/Radix_tree) implementation inspired by the ANSI C [Rax](https://github.com/antirez/rax) radix tree.
+
+## WIP
+:warning: This project is a work in progress and the following ToDos need to be resolved before the first release:
+- [ ] Implement `Remove`, `LongestPrefix`, `Len`, `Minimum`, `Maximum`, `WalkPrefix`
+- [ ] Sort children in nodes to walk the tree ordered
+- [ ] Add break conditions for `Walk`
+- [ ] Write documentation and provide some examples 
+- [ ] Compare benchmark with other radix Go implementations
+- [ ] Improve memory consummation and performance 
+
+## Trivia
+In Star Wars `gorax` are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.
