@@ -1,6 +1,5 @@
 ![gorax](gorax.png)
 
-
 [![GitHub Action](https://img.shields.io/badge/GitHub-Action-blue)](https://github.com/features/actions)
 [![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg)](https://pkg.go.dev/github.com/snorwin/gorax)
 [![Test](https://img.shields.io/github/workflow/status/snorwin/gorax/Test?label=tests&logo=github)](https://github.com/snorwin/gorax/actions)
@@ -19,7 +18,7 @@
 - [ ] Add break conditions for `Walk`
 - [ ] Write documentation and provide some examples 
 - [ ] Compare benchmark with other radix Go implementations
-- [ ] Improve memory consummation and performance 
+- [ ] Improve memory consumption and performance 
 
 ## Trivia
 In Star Wars `gorax` are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.
