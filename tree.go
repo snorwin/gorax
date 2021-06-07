@@ -2,6 +2,7 @@ package gorax
 
 type Tree struct {
 	head node
+	size int
 }
 
 func FromMap(values map[string]interface{}) *Tree {
@@ -20,12 +21,20 @@ func (t *Tree) ToMap() map[string]interface{} {
 	return ret
 }
 
+func (t *Tree) Len() int {
+	return t.size
+}
+
 func (t *Tree) Insert(key string, value interface{}) bool {
 	if value == nil {
 		value = Nil{}
 	}
 
-	return t.insert([]byte(key), value, true)
+	ok := t.insert([]byte(key), value, true)
+	if ok {
+		t.size += 1
+	}
+	return ok
 }
 
 func (t *Tree) Get(key string) (interface{}, bool) {

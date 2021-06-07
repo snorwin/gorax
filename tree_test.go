@@ -36,6 +36,7 @@ var _ = Describe("Tree", func() {
 			value, ok := t.Get(key)
 			Ω(ok).Should(BeTrue())
 			Ω(value).Should(Equal("new"))
+			Ω(t.Len()).Should(Equal(1))
 		})
 	})
 	Context("Fuzzy_Insert", func() {
@@ -58,10 +59,11 @@ var _ = Describe("Tree", func() {
 		}
 		AfterEach(func() {
 			Ω(t.ToMap()).Should(Equal(m))
+			Ω(t.Len()).Should(Equal(len(m)))
 		})
 	})
 	Context("Benchmark_Insert", func() {
-		Measure("Benchmark__100000", func(b Benchmarker) {
+		Measure("Benchmark_100000", func(b Benchmarker) {
 			size := 100000
 
 			m := make(map[string]interface{}, size)
