@@ -1,29 +1,31 @@
 package gorax
 
+import "sort"
+
 type node struct {
 	key      []byte
 	children []*node
 	value    interface{}
 }
 
-func (r node) isCompressed() bool {
-	return len(r.key) != len(r.children)
+func (n node) isCompressed() bool {
+	return len(n.key) != len(n.children)
 }
 
-func (r node) isKey() bool {
-	return r.value != nil
+func (n node) isKey() bool {
+	return n.value != nil
 }
 
-func (r node) getValue() interface{} {
-	return r.value
+func (n *node) getValue() interface{} {
+	return n.value
 }
 
-func (r node) getKeysWithPrefix(prefix []byte) [][]byte {
-	if r.isCompressed() {
-		return [][]byte{append(prefix, r.key...)}
+func (n *node) getKeysWithPrefix(prefix []byte) [][]byte {
+	if n.isCompressed() {
+		return [][]byte{append(prefix, n.key...)}
 	} else {
-		ret := make([][]byte, len(r.key))
-		for i, key := range r.key {
+		ret := make([][]byte, len(n.key))
+		for i, key := range n.key {
 			ret[i] = append(ret[i], prefix...)
 			ret[i] = append(ret[i], key)
 		}
@@ -31,6 +33,30 @@ func (r node) getKeysWithPrefix(prefix []byte) [][]byte {
 	}
 }
 
-func (r node) getChildren() []*node {
-	return r.children
+func (n *node) getChildren() []*node {
+	return n.children
+}
+
+func (n *node) deleteChildren() {
+	n.key = []byte{}
+	n.children = []*node{}
+}
+
+func (n *node) addChild(key byte, child *node) {
+	idx := sort.Search(len(n.key), func(i int) bool { return n.key[i] >= key })
+	if idx == len(n.key) {
+		n.key = append(n.key, key)
+		n.children = append(n.children, child)
+	} else {
+		n.key = append(n.key[:idx+1], n.key[idx:]...)
+		n.key[idx] = key
+
+		n.children = append(n.children[:idx+1], n.children[idx:]...)
+		n.children[idx] = child
+	}
+}
+
+func (n *node) addCompressedChild(key []byte, child *node) {
+	n.key = append(n.key, key...)
+	n.children = append(n.children, child)
 }

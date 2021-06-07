@@ -5,8 +5,12 @@ type Tree struct {
 	size int
 }
 
+func New() *Tree {
+	return &Tree{}
+}
+
 func FromMap(values map[string]interface{}) *Tree {
-	t := &Tree{}
+	t := New()
 	for k, v := range values {
 		t.Insert(k, v)
 	}
@@ -52,29 +56,50 @@ func (t *Tree) Get(key string) (interface{}, bool) {
 type WalkFunc func(key string, value interface{})
 
 func (t *Tree) Walk(f WalkFunc) {
-	nodes := []*node{&t.head}
-	keys := [][]byte{[]byte("")}
-
-	for len(nodes) > 0 {
-		// pop node
-		current := nodes[len(nodes)-1]
-		nodes = nodes[:len(nodes)-1]
-
-		// pop key
-		key := keys[len(keys)-1]
-		keys = keys[:len(keys)-1]
-
+	t.walk(func(key []byte, node *node) {
 		// call WalkFunc
-		if current.isKey() {
-			f(string(key), current.getValue())
+		if node.isKey() {
+			f(string(key), node.getValue())
 		}
 
-		// push child nodes
-		nodes = append(nodes, current.getChildren()...)
+	})
+}
 
-		// push child keys with current key as prefix
-		keys = append(keys, current.getKeysWithPrefix(key)...)
+func (t *Tree) Minimum() string {
+	current := &t.head
+
+	var ret []byte
+	for len(current.key) > 0 {
+		if current.isKey() {
+			break
+		}
+		if current.isCompressed() {
+			ret = append(ret, current.key...)
+		} else {
+			ret = append(ret, current.key[0])
+		}
+
+		current = current.children[0]
 	}
+
+	return string(ret)
+}
+
+func (t *Tree) Maximum() string {
+	current := &t.head
+
+	var ret []byte
+	for len(current.key) > 0 {
+		if current.isCompressed() {
+			ret = append(ret, current.key...)
+			current = current.children[0]
+		} else {
+			ret = append(ret, current.key[len(current.key)-1])
+			current = current.children[len(current.key)-1]
+		}
+	}
+
+	return string(ret)
 }
 
 func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
@@ -99,40 +124,38 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 	// split compressed node
 	if current.isCompressed() {
 		if idx != len(key) {
-			if split == 0 {
-				rightChild := &node{}
+			newChild := &node{}
 
-				leftChild := &node{
-					key:      append([]byte{}, current.key[1:]...),
-					children: current.children,
+			if split == 0 {
+				current.children = []*node{
+					{
+						key:      append([]byte{}, current.key[1:]...),
+						children: current.children,
+					},
 				}
 
-				current.key = []byte{current.key[0], key[idx]}
-				current.children = []*node{leftChild, rightChild}
-
-				current = rightChild
+				current.key = []byte{current.key[0]}
+				current.addChild(key[idx], newChild)
 			} else {
-				rightChild := &node{}
-
-				var leftChild *node
+				var oldChild *node
 				if len(current.key) == split+1 {
-					leftChild = current.children[0]
+					oldChild = current.children[0]
 				} else {
-					leftChild = &node{
+					oldChild = &node{
 						key:      append([]byte{}, current.key[split+1:]...),
 						children: current.children,
 					}
 				}
 
 				splitNode := &node{}
-				splitNode.key = []byte{current.key[split], key[idx]}
-				splitNode.children = []*node{leftChild, rightChild}
+				splitNode.addChild(current.key[split], oldChild)
+				splitNode.addChild(key[idx], newChild)
 
 				current.key = append([]byte{}, current.key[0:split]...)
 				current.children = []*node{splitNode}
-
-				current = rightChild
 			}
+
+			current = newChild
 		} else {
 			child := &node{
 				key:      append([]byte{}, current.key[split:]...),
@@ -151,20 +174,22 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 	for idx < len(key) {
 		var size int
 
+		child := &node{}
+
 		// if there are more than one char left and the current key is empty turn it into a compressed node
 		if len(current.key) == 0 && len(key) > 1 {
 			size = len(key) - idx
 			if size > MaxNodeKeySize {
 				size = MaxNodeKeySize
 			}
+
+			current.addCompressedChild(key[idx:idx+size], child)
 		} else {
 			size = 1
+
+			current.addChild(key[idx], child)
 		}
 
-		current.key = append(current.key, key[idx:idx+size]...)
-
-		child := &node{}
-		current.children = append(current.children, child)
 		current = child
 
 		idx += size
@@ -220,4 +245,28 @@ func (t *Tree) find(key []byte) (*node, int, int) {
 	}
 
 	return current, i, j
+}
+
+func (t *Tree) walk(fn func([]byte, *node)) {
+	nodes := []*node{&t.head}
+	keys := [][]byte{[]byte("")}
+
+	for len(nodes) > 0 {
+		// pop node
+		current := nodes[len(nodes)-1]
+		nodes = nodes[:len(nodes)-1]
+
+		// pop key
+		key := keys[len(keys)-1]
+		keys = keys[:len(keys)-1]
+
+		// call function
+		fn(key, current)
+
+		// push child nodes
+		nodes = append(nodes, current.getChildren()...)
+
+		// push child keys with current key as prefix
+		keys = append(keys, current.getKeysWithPrefix(key)...)
+	}
 }

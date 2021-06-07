@@ -1,8 +1,8 @@
 package gorax_test
 
 import (
-	"fmt"
 	"math/rand"
+	"sort"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,13 +10,31 @@ import (
 	"github.com/snorwin/gorax"
 )
 
+const (
+	LetterBytes      = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	LetterBytesSmall = "abcdef"
+
+	TestKeyLength   = 256
+	TestValueLength = 256
+
+	FuzzyTestSize = 1000
+
+	BenchmarkSamples  = 10
+	BenchmarkTreeSize = 100000
+)
+
 var _ = Describe("Tree", func() {
+	Context("Len", func() {
+		It("should_not_fail_if_empty", func() {
+			Ω(gorax.New().Len()).Should(Equal(0))
+		})
+	})
 	Context("Insert", func() {
 		var (
 			t *gorax.Tree
 		)
 		BeforeEach(func() {
-			t = &gorax.Tree{}
+			t = gorax.New()
 		})
 		It("should_insert_nil", func() {
 			key := "foo"
@@ -39,42 +57,54 @@ var _ = Describe("Tree", func() {
 			Ω(value).Should(Equal("new"))
 			Ω(t.Len()).Should(Equal(1))
 		})
-	})
-	Context("Fuzzy_Insert", func() {
-		size := 1000
+		It("should_insert_key_value_fuzzy", func() {
+			size := FuzzyTestSize
 
-		t := &gorax.Tree{}
-		m := make(map[string]interface{}, size)
-
-		for j := 0; j < size; j++ {
-			It("shoud_insert_key_value", func() {
-				key := randString(rand.Intn(256))
-				value := randString(256)
+			m := make(map[string]interface{}, size)
+			for j := 0; j < size; j++ {
+				key := randString(rand.Intn(TestKeyLength), LetterBytes)
+				value := randString(TestValueLength, LetterBytes)
 
 				_, expected := m[key]
 				m[key] = value
 
 				actual := !t.Insert(key, value)
 				Ω(actual).Should(Equal(expected))
-			})
-		}
-		AfterEach(func() {
-			Ω(t.ToMap()).Should(Equal(m))
-			Ω(t.Len()).Should(Equal(len(m)))
+
+				Ω(t.ToMap()).Should(Equal(m))
+				Ω(t.Len()).Should(Equal(len(m)))
+			}
 		})
-	})
-	Context("Benchmark_Insert", func() {
-		size := 100000
-		Measure(fmt.Sprintf("Benchmark_Insert_%d", size), func(b Benchmarker) {
+		It("should_insert_limited_bytes_key_value_fuzzy", func() {
+			size := FuzzyTestSize
+
+			m := make(map[string]interface{}, size)
+			for j := 0; j < size; j++ {
+				key := randString(rand.Intn(TestKeyLength), LetterBytesSmall)
+				value := randString(TestValueLength, LetterBytes)
+
+				_, expected := m[key]
+				m[key] = value
+
+				actual := !t.Insert(key, value)
+				Ω(actual).Should(Equal(expected))
+
+				Ω(t.ToMap()).Should(Equal(m))
+				Ω(t.Len()).Should(Equal(len(m)))
+			}
+		})
+		Measure("Benchmark", func(b Benchmarker) {
+			size := BenchmarkTreeSize
+
 			m := make(map[string]interface{}, size)
 			for i := 0; i < size; i++ {
-				m[randString(rand.Intn(32))] = randString(rand.Intn(32))
+				m[randString(rand.Intn(TestKeyLength), LetterBytes)] = randString(rand.Intn(32), LetterBytes)
 			}
 
-			t := gorax.FromMap(m)
+			t = gorax.FromMap(m)
 
-			key := randString(rand.Intn(32))
-			value := randString(rand.Intn(32))
+			key := randString(rand.Intn(TestKeyLength), LetterBytes)
+			value := randString(rand.Intn(TestValueLength), LetterBytes)
 
 			runtime := b.Time("runtime", func() {
 				t.Insert(key, value)
@@ -85,21 +115,26 @@ var _ = Describe("Tree", func() {
 			Ω(actual).Should(Equal(value))
 
 			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, 100)
+		}, BenchmarkSamples)
 	})
-	Context("Benchmark_Get", func() {
-		size := 100000
+	Context("Get", func() {
+		It("should_not_fail_if_empty", func() {
+			value, ok := gorax.New().Get("foo")
+			Ω(ok).Should(BeFalse())
+			Ω(value).Should(BeNil())
+		})
+		Measure("Benchmark", func(b Benchmarker) {
+			size := BenchmarkTreeSize
 
-		m := make(map[string]interface{}, size)
-		keys := make([]string, size)
-		for i := 0; i < size; i++ {
-			keys[i] = randString(rand.Intn(32))
-			m[keys[i]] = randString(rand.Intn(32))
-		}
+			m := make(map[string]interface{}, size)
+			keys := make([]string, size)
+			for i := 0; i < size; i++ {
+				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				m[keys[i]] = randString(rand.Intn(TestValueLength), LetterBytes)
+			}
 
-		t := gorax.FromMap(m)
+			t := gorax.FromMap(m)
 
-		Measure(fmt.Sprintf("Benchmark_Get_%d", size), func(b Benchmarker) {
 			key := keys[rand.Intn(len(keys))]
 
 			var value interface{}
@@ -112,16 +147,118 @@ var _ = Describe("Tree", func() {
 			Ω(value).Should(Equal(m[key]))
 
 			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, 100)
+		}, BenchmarkSamples)
+	})
+	Context("Minimum", func() {
+		var (
+			t *gorax.Tree
+		)
+		BeforeEach(func() {
+			t = gorax.New()
+		})
+		It("should_not_fail_if_empty", func() {
+			Ω(t.Minimum()).Should(Equal(""))
+		})
+		It("should_find_minimum", func() {
+			t = gorax.FromMap(map[string]interface{}{
+				"foo":       1,
+				"foobar":    2,
+				"foofoo":    3,
+				"barbar":    nil,
+				"barfoo":    "foo",
+				"barbarbar": "bar",
+				"foobarfoo": "foo",
+			})
+			Ω(t.Minimum()).Should(Equal("barbar"))
+		})
+		It("should_find_minimum_fuzzy", func() {
+			size := FuzzyTestSize
+
+			keys := make([]string, size)
+			for i := 0; i < size; i++ {
+				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				t.Insert(keys[i], "")
+			}
+			sort.Strings(keys)
+			Ω(t.Minimum()).Should(Equal(keys[0]))
+		})
+		Measure("Benchmark", func(b Benchmarker) {
+			size := BenchmarkTreeSize
+
+			keys := make([]string, size)
+			for i := 0; i < size; i++ {
+				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				t.Insert(keys[i], "")
+			}
+			sort.Strings(keys)
+
+			var key string
+			runtime := b.Time("runtime", func() {
+				key = t.Minimum()
+			})
+			Ω(key).Should(Equal(keys[0]))
+
+			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
+		}, BenchmarkSamples)
+	})
+	Context("Maximum", func() {
+		var (
+			t *gorax.Tree
+		)
+		BeforeEach(func() {
+			t = gorax.New()
+		})
+		It("should_not_fail_if_empty", func() {
+			Ω(t.Maximum()).Should(Equal(""))
+		})
+		It("should_find_maximum", func() {
+			t = gorax.FromMap(map[string]interface{}{
+				"foo":       1,
+				"foobar":    2,
+				"foofoo":    3,
+				"barbar":    nil,
+				"barfoo":    "foo",
+				"barbarbar": "bar",
+				"foobarfoo": "foo",
+			})
+			Ω(t.Maximum()).Should(Equal("foofoo"))
+		})
+		It("should_find_maximum_fuzzy", func() {
+			size := FuzzyTestSize
+
+			keys := make([]string, size)
+			for i := 0; i < size; i++ {
+				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				t.Insert(keys[i], "")
+			}
+			sort.Strings(keys)
+			Ω(t.Maximum()).Should(Equal(keys[len(keys)-1]))
+		})
+		Measure("Benchmark", func(b Benchmarker) {
+			size := BenchmarkTreeSize
+
+			keys := make([]string, size)
+			for i := 0; i < size; i++ {
+				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				t.Insert(keys[i], "")
+			}
+			sort.Strings(keys)
+
+			var key string
+			runtime := b.Time("runtime", func() {
+				key = t.Maximum()
+			})
+			Ω(key).Should(Equal(keys[len(keys)-1]))
+
+			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
+		}, BenchmarkSamples)
 	})
 })
 
-const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-
-func randString(n int) string {
+func randString(n int, bytes string) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = bytes[rand.Intn(len(bytes))]
 	}
 	return string(b)
 }

@@ -13,12 +13,33 @@
 
 ## WIP
 :warning: This project is a work in progress and the following ToDos need to be resolved before the first release:
-- [ ] Implement `Remove`, `LongestPrefix`, `Len`, `Minimum`, `Maximum`, `WalkPrefix`
-- [ ] Sort children in nodes to walk the tree ordered
+- [ ] Implement `Remove`, `LongestPrefix`, `WalkPrefix`
 - [ ] Add break conditions for `Walk`
 - [ ] Write documentation and provide some examples 
 - [ ] Compare benchmark with other radix Go implementations
 - [ ] Improve memory consumption and performance 
+
+## Example
+```go
+t := gorax.FromMap(map[string]interface{}{
+    "alligator":     nil,
+    "alien":         1,
+    "baloon":        2,
+    "chromodynamic": 3,
+    "romane":        4,
+    "romanus":       5,
+    "romulus":       6,
+    "rubens":        7,
+    "ruber":         8,
+    "rubicon":       9,
+    "rubicundus":    "a",
+    "all":           "b",
+    "rub":           "c",
+    "ba":            "d",
+})
+```
+![example](example.svg)
+*Compressed nodes are green and nodes with a value assigned are blue.*
 
 ## Trivia
 In Star Wars `gorax` are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.
