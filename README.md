@@ -39,7 +39,7 @@ t := gorax.FromMap(map[string]interface{}{
 })
 ```
 ![example](example.svg)
-*Compressed nodes are green and nodes with a value assigned are blue.*
+*Compressed nodes are green, leaf nodes are blue and nodes with a value assigned have a rectangular shape.*
 
 ## Trivia
 In Star Wars `gorax` are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.
