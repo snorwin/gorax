@@ -1,6 +1,7 @@
 package gorax_test
 
 import (
+	"fmt"
 	"math/rand"
 
 	. "github.com/onsi/ginkgo"
@@ -63,9 +64,8 @@ var _ = Describe("Tree", func() {
 		})
 	})
 	Context("Benchmark_Insert", func() {
-		Measure("Benchmark_100000", func(b Benchmarker) {
-			size := 100000
-
+		size := 100000
+		Measure(fmt.Sprintf("Benchmark_Insert_%d", size), func(b Benchmarker) {
 			m := make(map[string]interface{}, size)
 			for i := 0; i < size; i++ {
 				m[randString(rand.Intn(32))] = randString(rand.Intn(32))
@@ -83,6 +83,33 @@ var _ = Describe("Tree", func() {
 			actual, ok := t.Get(key)
 			Ω(ok).Should(BeTrue())
 			Ω(actual).Should(Equal(value))
+
+			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
+		}, 100)
+	})
+	Context("Benchmark_Get", func() {
+		size := 100000
+
+		m := make(map[string]interface{}, size)
+		keys := make([]string, size)
+		for i := 0; i < size; i++ {
+			keys[i] = randString(rand.Intn(32))
+			m[keys[i]] = randString(rand.Intn(32))
+		}
+
+		t := gorax.FromMap(m)
+
+		Measure(fmt.Sprintf("Benchmark_Get_%d", size), func(b Benchmarker) {
+			key := keys[rand.Intn(len(keys))]
+
+			var value interface{}
+			var ok bool
+			runtime := b.Time("runtime", func() {
+				value, ok = t.Get(key)
+			})
+
+			Ω(ok).Should(BeTrue())
+			Ω(value).Should(Equal(m[key]))
 
 			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
 		}, 100)
