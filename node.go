@@ -37,11 +37,6 @@ func (n *node) getChildren() []*node {
 	return n.children
 }
 
-func (n *node) deleteChildren() {
-	n.key = []byte{}
-	n.children = []*node{}
-}
-
 func (n *node) addChild(key byte, child *node) {
 	idx := sort.Search(len(n.key), func(i int) bool { return n.key[i] >= key })
 	if idx == len(n.key) {
