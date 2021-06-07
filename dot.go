@@ -6,6 +6,7 @@ import (
 	"github.com/emicklei/dot"
 )
 
+// ToDotGraph walks the Tree  and converts it into a dot.Graph
 func (t *Tree) ToDotGraph() *dot.Graph {
 	// create new dot graph
 	graph := dot.NewGraph(dot.Directed)

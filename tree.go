@@ -1,34 +1,48 @@
 package gorax
 
+const (
+	maxCompressedNodeKeySize = 64
+)
+
+// Tree implements a radix tree,
 type Tree struct {
 	head node
 	size int
 }
 
+// New returns an empty Tree
 func New() *Tree {
 	return &Tree{}
 }
 
+// FromMap returns a new Tree containing the keys from an existing map
 func FromMap(values map[string]interface{}) *Tree {
 	t := New()
 	for k, v := range values {
 		t.Insert(k, v)
 	}
+
 	return t
 }
 
+// ToMap walks the Tree and converts it into a map
 func (t *Tree) ToMap() map[string]interface{} {
 	ret := map[string]interface{}{}
-	t.Walk(func(key string, value interface{}) {
+	t.Walk(func(key string, value interface{}) bool {
 		ret[key] = value
+
+		return false
 	})
+
 	return ret
 }
 
+// Len returns the number of elements in the Tree
 func (t *Tree) Len() int {
 	return t.size
 }
 
+// Insert adds a new entry or updates an existing entry. Returns 'true' if entry was added.
 func (t *Tree) Insert(key string, value interface{}) bool {
 	if value == nil {
 		value = Nil{}
@@ -53,18 +67,21 @@ func (t *Tree) Get(key string) (interface{}, bool) {
 	return value, ok
 }
 
-type WalkFunc func(key string, value interface{})
+// WalkFn is used when walking the Tree. Takes a key and value, returning if iteration should be terminated.
+type WalkFn func(key string, value interface{}) bool
 
-func (t *Tree) Walk(f WalkFunc) {
+// Walk walks the Tree
+func (t *Tree) Walk(fn WalkFn) {
 	t.walk(func(key []byte, node *node) {
-		// call WalkFunc
+		// call WalkFn
 		if node.isKey() {
-			f(string(key), node.getValue())
+			fn(string(key), node.getValue())
 		}
 
 	})
 }
 
+// Minimum returns the minimum value in the Tree
 func (t *Tree) Minimum() string {
 	current := &t.head
 
@@ -85,6 +102,7 @@ func (t *Tree) Minimum() string {
 	return string(ret)
 }
 
+// Maximum returns the maximum value in the Tree
 func (t *Tree) Maximum() string {
 	current := &t.head
 
@@ -179,8 +197,8 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 		// if there are more than one char left and the current key is empty turn it into a compressed node
 		if len(current.key) == 0 && len(key) > 1 {
 			size = len(key) - idx
-			if size > MaxNodeKeySize {
-				size = MaxNodeKeySize
+			if size > maxCompressedNodeKeySize {
+				size = maxCompressedNodeKeySize
 			}
 
 			current.addCompressedChild(key[idx:idx+size], child)

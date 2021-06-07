@@ -29,6 +29,7 @@ func (n *node) getKeysWithPrefix(prefix []byte) [][]byte {
 			ret[i] = append(ret[i], prefix...)
 			ret[i] = append(ret[i], key)
 		}
+
 		return ret
 	}
 }
