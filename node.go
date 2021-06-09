@@ -21,6 +21,12 @@ func (n node) isLeaf() bool {
 }
 
 func (n *node) getValue() interface{} {
+	if n.isKey() {
+		if _, isNil := n.value.(Nil); isNil {
+			return nil
+		}
+	}
+
 	return n.value
 }
 

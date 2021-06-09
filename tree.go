@@ -55,15 +55,12 @@ func (t *Tree) Insert(key string, value interface{}) bool {
 
 // Get is used to lookup a specific key and returns the value and if it was found
 func (t *Tree) Get(key string) (interface{}, bool) {
-	value, ok := t.get(key)
-
-	if ok {
-		if _, isNil := value.(Nil); isNil {
-			return nil, true
-		}
+	current, idx, split := t.find(key, nil)
+	if idx != len(key) || (current.isCompressed() && split != 0) || !current.isKey() {
+		return nil, false
 	}
 
-	return value, ok
+	return current.getValue(), true
 }
 
 // LongestPrefix is like Get, but instead of an exact match, it will return the longest prefix match.
@@ -79,10 +76,6 @@ func (t *Tree) LongestPrefix(prefix string) (string, interface{}, bool) {
 
 	if current == nil {
 		return "", nil, false
-	}
-
-	if _, isNil := current.getValue().(Nil); isNil {
-		return currentKey, nil, true
 	}
 
 	return currentKey, current.getValue(), true
@@ -161,10 +154,6 @@ func (t *Tree) Minimum() (string, interface{}, bool) {
 		current = current.children[0]
 	}
 
-	if _, isNil := current.getValue().(Nil); isNil {
-		return string(ret), nil, true
-	}
-
 	return string(ret), current.getValue(), current.isKey()
 }
 
@@ -181,10 +170,6 @@ func (t *Tree) Maximum() (string, interface{}, bool) {
 			ret = append(ret, current.key[len(current.key)-1])
 			current = current.children[len(current.key)-1]
 		}
-	}
-
-	if _, isNil := current.getValue().(Nil); isNil {
-		return string(ret), nil, true
 	}
 
 	return string(ret), current.getValue(), current.isKey()
@@ -283,15 +268,6 @@ func (t *Tree) insert(key string, value interface{}, overwrite bool) bool {
 	// insert value
 	current.value = value
 	return true
-}
-
-func (t *Tree) get(key string) (interface{}, bool) {
-	current, idx, split := t.find(key, nil)
-	if idx != len(key) || (current.isCompressed() && split != 0) || !current.isKey() {
-		return nil, false
-	}
-
-	return current.getValue(), true
 }
 
 func (t *Tree) find(key string, fn func(string, *node) bool) (*node, int, int) {
