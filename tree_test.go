@@ -465,7 +465,7 @@ var _ = Describe("Tree", func() {
 			Ω(value).Should(BeNil())
 			Ω(ok).Should(BeFalse())
 		})
-		FIt("should_find_longest_prefix", func() {
+		It("should_find_longest_prefix", func() {
 			t = gorax.FromMap(map[string]interface{}{
 				"foo":       1,
 				"foobar":    2,
