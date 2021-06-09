@@ -6,7 +6,7 @@ digraph  {
 	n31[color="green",label="ali"];
 	n34[color="blue",label="alien|1",shape="record"];
 	n32[color="green",label="all|b",shape="record"];
-	n33[color="blue",label="alligator|{}",shape="record"];
+	n33[color="blue",label="alligator|<nil>",shape="record"];
 	n3[label="b"];
 	n28[color="green",label="ba|d",shape="record"];
 	n29[color="blue",label="baloon|2",shape="record"];
