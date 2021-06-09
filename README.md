@@ -18,7 +18,8 @@
 - [ ] Compare benchmark with other radix Go implementations
 - [ ] Improve memory consumption and performance 
 
-## Example
+## Example Tree
+![example](example.svg)
 ```go
 t := gorax.FromMap(map[string]interface{}{
     "alligator":     nil,
@@ -37,7 +38,6 @@ t := gorax.FromMap(map[string]interface{}{
     "ba":            "d",
 })
 ```
-![example](example.svg)
 
 ## Trivia
 In Star Wars `gorax` are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.

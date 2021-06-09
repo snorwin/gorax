@@ -452,6 +452,35 @@ var _ = Describe("Tree", func() {
 			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
 		}, BenchmarkSamples)
 	})
+	Context("LongestPrefix", func() {
+		var (
+			t *gorax.Tree
+		)
+		BeforeEach(func() {
+			t = gorax.New()
+		})
+		It("should_not_fail_if_empty", func() {
+			key, value, ok := t.LongestPrefix("foo")
+			Ω(key).Should(Equal(""))
+			Ω(value).Should(BeNil())
+			Ω(ok).Should(BeFalse())
+		})
+		FIt("should_find_longest_prefix", func() {
+			t = gorax.FromMap(map[string]interface{}{
+				"foo":       1,
+				"foobar":    2,
+				"foofoo":    3,
+				"barbar":    nil,
+				"barfoo":    "foo",
+				"barbarbar": "bar",
+				"foobarfoo": "foo",
+			})
+			key, value, ok := t.LongestPrefix("barbarbarbarbar")
+			Ω(key).Should(Equal("barbarbar"))
+			Ω(value).Should(Equal("bar"))
+			Ω(ok).Should(BeTrue())
+		})
+	})
 })
 
 func randString(n int, bytes string) string {

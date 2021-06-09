@@ -67,11 +67,13 @@ func (t *Tree) Get(key string) (interface{}, bool) {
 func (t *Tree) LongestPrefix(prefix string) (string, interface{}, bool) {
 	var current *node
 	var currentKey string
-	t.find(prefix, func(key string, n *node) bool {
-		current = n
-		currentKey = key
+	t.find(prefix, func(key string, node *node) bool {
+		if node.isKey() {
+			current = node
+			currentKey = key
+		}
 
-		return true
+		return false
 	})
 
 	if current == nil {
@@ -109,7 +111,7 @@ func (t *Tree) Walk(fn WalkFn) {
 	})
 }
 
-// WalkPrefix walks the tree under a prefix
+// WalkPrefix walks the Tree under a prefix
 func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	current, idx, split := t.find(prefix, nil)
 	if len(prefix) == idx+split {
@@ -124,7 +126,7 @@ func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	}
 }
 
-// WalkPath is used to walk the tree, but only visiting nodes from the root down to a given leaf.
+// WalkPath is used to walk the Tree, but only visiting nodes from the root down to a given leaf.
 func (t *Tree) WalkPath(path string, fn WalkFn) {
 	t.find(path, func(key string, node *node) bool {
 		// call WalkFn
