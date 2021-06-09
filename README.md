@@ -13,8 +13,7 @@
 
 ## WIP
 :warning: This project is a work in progress and the following ToDos need to be resolved before the first release:
-- [ ] Implement `Remove`, `LongestPrefix`, `WalkPrefix`
-- [ ] Add break conditions for `Walk`
+- [ ] Implement `Delete`
 - [ ] Write documentation and provide some examples 
 - [ ] Compare benchmark with other radix Go implementations
 - [ ] Improve memory consumption and performance 

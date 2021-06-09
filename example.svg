@@ -315,9 +315,9 @@
 <!-- n8 -->
 <g id="node24" class="node">
 <title>n8</title>
-<polygon fill="none" stroke="#0000ff" points="507.6676,-359.7 507.6676,-395.7 564.5428,-395.7 564.5428,-359.7 507.6676,-359.7"/>
+<polygon fill="none" stroke="#000000" points="507.6676,-359.7 507.6676,-395.7 564.5428,-395.7 564.5428,-359.7 507.6676,-359.7"/>
 <text text-anchor="middle" x="524.9979" y="-373.5" font-family="Times,serif" font-size="14.00" fill="#000000">rub</text>
-<polyline fill="none" stroke="#0000ff" points="542.3282,-359.7 542.3282,-395.7 "/>
+<polyline fill="none" stroke="#000000" points="542.3282,-359.7 542.3282,-395.7 "/>
 <text text-anchor="middle" x="553.4355" y="-373.5" font-family="Times,serif" font-size="14.00" fill="#000000">c</text>
 </g>
 <!-- n7&#45;&gt;n8 -->

@@ -11,32 +11,38 @@ func (t *Tree) ToDotGraph() *dot.Graph {
 	// create new dot graph
 	graph := dot.NewGraph(dot.Directed)
 
-	t.walk(func(key []byte, node *node) {
-		n := graph.Node(string(key))
+	walk(&t.root, func(key string, node *node) bool {
+		n := graph.Node(key)
 		if node.isKey() {
 			// set value in label
 			n.Attr("label", fmt.Sprintf("%s|%v", key, node.getValue()))
 
-			// change shape and color
-			n.Attr("color", "blue").
-				Attr("shape", "record")
+			// change shape
+			n.Attr("shape", "record")
+		}
+
+		if node.isLeaf() {
+			// leaf nodes are blue
+			n.Attr("color", "blue")
 		}
 
 		if node.isCompressed() {
-			// change color of compressed nodes
+			// compressed nodes are green
 			n.Attr("color", "green")
 
 			// add compressed edge
-			n.Edge(graph.Node(string(append(key, node.key...)))).
+			n.Edge(graph.Node(key+node.key)).
 				Label(node.key).
 				Attr("color", "green")
 		} else {
-			// add all edges
+			// add all other edges
 			for i := 0; i < len(node.key); i++ {
-				n.Edge(graph.Node(string(append(key, node.key[i])))).
+				n.Edge(graph.Node(key + string(node.key[i]))).
 					Label(string(node.key[i]))
 			}
 		}
+
+		return false
 	})
 
 	// create root

@@ -1,12 +1,10 @@
 package gorax
 
-const (
-	maxCompressedNodeKeySize = 64
-)
+import "sort"
 
 // Tree implements a radix tree,
 type Tree struct {
-	head node
+	root node
 	size int
 }
 
@@ -48,15 +46,16 @@ func (t *Tree) Insert(key string, value interface{}) bool {
 		value = Nil{}
 	}
 
-	ok := t.insert([]byte(key), value, true)
+	ok := t.insert(key, value, true)
 	if ok {
 		t.size += 1
 	}
 	return ok
 }
 
+// Get is used to lookup a specific key and returns the value and if it was found
 func (t *Tree) Get(key string) (interface{}, bool) {
-	value, ok := t.get([]byte(key))
+	value, ok := t.get(key)
 
 	if ok {
 		if _, isNil := value.(Nil); isNil {
@@ -67,23 +66,86 @@ func (t *Tree) Get(key string) (interface{}, bool) {
 	return value, ok
 }
 
-// WalkFn is used when walking the Tree. Takes a key and value, returning if iteration should be terminated.
+// LongestPrefix is like Get, but instead of an exact match, it will return the longest prefix match.
+func (t *Tree) LongestPrefix(prefix string) (string, interface{}, bool) {
+	var current *node
+	var currentKey string
+	t.find(prefix, func(key string, n *node) bool {
+		current = n
+		currentKey = key
+
+		return true
+	})
+
+	if current == nil {
+		return "", nil, false
+	}
+
+	if _, isNil := current.getValue().(Nil); isNil {
+		return currentKey, nil, true
+	}
+
+	return currentKey, current.getValue(), true
+}
+
+// Delete deletes a key and returns the previous value and if it was deleted
+func (t *Tree) Delete(key string) bool {
+	// TODO
+	return false
+}
+
+// DeletePrefix deletes the subtree under a prefix Returns how many nodes were deleted.
+// Use this to delete large subtrees efficiently.
+func (t *Tree) DeletePrefix(prefix string) int {
+	// TODO
+	return 0
+}
+
+// WalkFn is used when walking the Tree. Takes a key and value, returning 'true' if iteration should be terminated.
 type WalkFn func(key string, value interface{}) bool
 
 // Walk walks the Tree
 func (t *Tree) Walk(fn WalkFn) {
-	t.walk(func(key []byte, node *node) {
+	walk(&t.root, func(key string, node *node) bool {
 		// call WalkFn
 		if node.isKey() {
-			fn(string(key), node.getValue())
+			return fn(key, node.getValue())
 		}
 
+		return false
+	})
+}
+
+// WalkPrefix walks the tree under a prefix
+func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
+	current, idx, split := t.find(prefix, nil)
+	if len(prefix) == idx+split {
+		walk(current, func(key string, node *node) bool {
+			// call WalkFn
+			if node.isKey() {
+				return fn(prefix+key, node.getValue())
+			}
+
+			return false
+		})
+	}
+}
+
+// WalkPath is used to walk the tree, but only visiting nodes from the root down to a given leaf.
+func (t *Tree) WalkPath(path string, fn WalkFn) {
+	t.find(path, func(key string, node *node) bool {
+		// call WalkFn
+		if node.isKey() {
+			return fn(key, node.getValue())
+		}
+
+		return false
 	})
 }
 
 // Minimum returns the minimum value in the Tree
-func (t *Tree) Minimum() string {
-	current := &t.head
+func (t *Tree) Minimum() (string, interface{}, bool) {
+	current := &t.root
 
 	var ret []byte
 	for len(current.key) > 0 {
@@ -99,12 +161,16 @@ func (t *Tree) Minimum() string {
 		current = current.children[0]
 	}
 
-	return string(ret)
+	if _, isNil := current.getValue().(Nil); isNil {
+		return string(ret), nil, true
+	}
+
+	return string(ret), current.getValue(), current.isKey()
 }
 
 // Maximum returns the maximum value in the Tree
-func (t *Tree) Maximum() string {
-	current := &t.head
+func (t *Tree) Maximum() (string, interface{}, bool) {
+	current := &t.root
 
 	var ret []byte
 	for len(current.key) > 0 {
@@ -117,12 +183,16 @@ func (t *Tree) Maximum() string {
 		}
 	}
 
-	return string(ret)
+	if _, isNil := current.getValue().(Nil); isNil {
+		return string(ret), nil, true
+	}
+
+	return string(ret), current.getValue(), current.isKey()
 }
 
-func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
+func (t *Tree) insert(key string, value interface{}, overwrite bool) bool {
 	// find the radix tree as far as possible
-	current, idx, split := t.find(key)
+	current, idx, split := t.find(key, nil)
 
 	// insert value if key is already part of the tree and not in the middle of a compressed node
 	if idx == len(key) && (!current.isCompressed() || split == 0) {
@@ -147,40 +217,40 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 			if split == 0 {
 				current.children = []*node{
 					{
-						key:      append([]byte{}, current.key[1:]...),
+						key:      current.key[1:],
 						children: current.children,
 					},
 				}
 
-				current.key = []byte{current.key[0]}
-				current.addChild(key[idx], newChild)
+				current.key = string(current.key[0])
+				current.addChild(string(key[idx]), newChild)
 			} else {
 				var oldChild *node
 				if len(current.key) == split+1 {
 					oldChild = current.children[0]
 				} else {
 					oldChild = &node{
-						key:      append([]byte{}, current.key[split+1:]...),
+						key:      current.key[split+1:],
 						children: current.children,
 					}
 				}
 
 				splitNode := &node{}
-				splitNode.addChild(current.key[split], oldChild)
-				splitNode.addChild(key[idx], newChild)
+				splitNode.addChild(string(current.key[split]), oldChild)
+				splitNode.addChild(string(key[idx]), newChild)
 
-				current.key = append([]byte{}, current.key[0:split]...)
+				current.key = current.key[0:split]
 				current.children = []*node{splitNode}
 			}
 
 			current = newChild
 		} else {
 			child := &node{
-				key:      append([]byte{}, current.key[split:]...),
+				key:      current.key[split:],
 				children: current.children,
 			}
 
-			current.key = append([]byte{}, current.key[0:split]...)
+			current.key = current.key[0:split]
 			current.children = []*node{child}
 
 			current = child
@@ -197,15 +267,12 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 		// if there are more than one char left and the current key is empty turn it into a compressed node
 		if len(current.key) == 0 && len(key) > 1 {
 			size = len(key) - idx
-			if size > maxCompressedNodeKeySize {
-				size = maxCompressedNodeKeySize
-			}
 
 			current.addCompressedChild(key[idx:idx+size], child)
 		} else {
 			size = 1
 
-			current.addChild(key[idx], child)
+			current.addChild(string(key[idx]), child)
 		}
 
 		current = child
@@ -218,8 +285,8 @@ func (t *Tree) insert(key []byte, value interface{}, overwrite bool) bool {
 	return true
 }
 
-func (t *Tree) get(key []byte) (interface{}, bool) {
-	current, idx, split := t.find(key)
+func (t *Tree) get(key string) (interface{}, bool) {
+	current, idx, split := t.find(key, nil)
 	if idx != len(key) || (current.isCompressed() && split != 0) || !current.isKey() {
 		return nil, false
 	}
@@ -227,12 +294,20 @@ func (t *Tree) get(key []byte) (interface{}, bool) {
 	return current.getValue(), true
 }
 
-func (t *Tree) find(key []byte) (*node, int, int) {
-	current := &t.head
+func (t *Tree) find(key string, fn func(string, *node) bool) (*node, int, int) {
+	current := &t.root
 
 	var i, j int
 	for len(current.key) > 0 && i < len(key) {
+		if fn != nil {
+			// call function if defined
+			if fn(key[:i], current) {
+				break
+			}
+		}
+
 		if current.isCompressed() {
+			// match as many chars as possible from the compressed key with the lookup key
 			for j = 0; j < len(current.key) && i < len(key); j++ {
 				if current.key[j] != key[i] {
 					break
@@ -240,18 +315,20 @@ func (t *Tree) find(key []byte) (*node, int, int) {
 
 				i += 1
 			}
+
 			if j != len(current.key) {
+				// not the entire compressed key matched with the lookup key - break
 				break
 			}
 
 			j = 0
 		} else {
-			for j = 0; j < len(current.key); j++ {
-				if current.key[j] == key[i] {
-					break
-				}
-			}
-			if j == len(current.key) {
+			// find a child whose key is matching with the lookup key
+			j = sort.Search(len(current.key), func(idx int) bool {
+				return current.key[idx] >= key[i]
+			})
+			if j == len(current.key) || current.key[j] != key[i] {
+				// no matching child found - break
 				break
 			}
 
@@ -262,12 +339,19 @@ func (t *Tree) find(key []byte) (*node, int, int) {
 		j = 0
 	}
 
+	if current.isLeaf() || (len(key) == i && j == 0) {
+		if fn != nil {
+			// call function if defined
+			fn(key[:i], current)
+		}
+	}
+
 	return current, i, j
 }
 
-func (t *Tree) walk(fn func([]byte, *node)) {
-	nodes := []*node{&t.head}
-	keys := [][]byte{[]byte("")}
+func walk(start *node, fn func(string, *node) bool) {
+	nodes := []*node{start}
+	keys := []string{""}
 
 	for len(nodes) > 0 {
 		// pop node
@@ -279,7 +363,9 @@ func (t *Tree) walk(fn func([]byte, *node)) {
 		keys = keys[:len(keys)-1]
 
 		// call function
-		fn(key, current)
+		if fn(key, current) {
+			break
+		}
 
 		// push child nodes
 		nodes = append(nodes, current.getChildren()...)

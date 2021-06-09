@@ -23,7 +23,7 @@ digraph  {
 	n21[color="green",label="romu"];
 	n22[color="blue",label="romulus|6",shape="record"];
 	n7[label="ru"];
-	n8[color="blue",label="rub|c",shape="record"];
+	n8[label="rub|c",shape="record"];
 	n9[label="rube"];
 	n16[label="ruben"];
 	n18[color="blue",label="rubens|7",shape="record"];
