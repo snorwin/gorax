@@ -1,19 +1,22 @@
 package gorax
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
-// Tree implements a radix tree,
+// Tree implements a radix tree.
 type Tree struct {
 	root node
 	size int
 }
 
-// New returns an empty Tree
+// New returns an empty Tree.
 func New() *Tree {
 	return &Tree{}
 }
 
-// FromMap returns a new Tree containing the keys from an existing map
+// FromMap returns a new Tree containing the keys from an existing map.
 func FromMap(values map[string]interface{}) *Tree {
 	t := New()
 	for k, v := range values {
@@ -23,7 +26,7 @@ func FromMap(values map[string]interface{}) *Tree {
 	return t
 }
 
-// ToMap walks the Tree and converts it into a map
+// ToMap walks the Tree and converts it into a map.
 func (t *Tree) ToMap() map[string]interface{} {
 	ret := map[string]interface{}{}
 	t.Walk(func(key string, value interface{}) bool {
@@ -35,7 +38,7 @@ func (t *Tree) ToMap() map[string]interface{} {
 	return ret
 }
 
-// Len returns the number of elements in the Tree
+// Len returns the number of elements in the Tree.
 func (t *Tree) Len() int {
 	return t.size
 }
@@ -53,7 +56,7 @@ func (t *Tree) Insert(key string, value interface{}) bool {
 	return ok
 }
 
-// Get is used to lookup a specific key and returns the value and if it was found
+// Get is used to lookup a specific key and returns the value and if it was found.
 func (t *Tree) Get(key string) (interface{}, bool) {
 	current, idx, split := t.find(key, nil)
 	if idx != len(key) || (current.isCompressed() && split != 0) || !current.isKey() {
@@ -83,7 +86,7 @@ func (t *Tree) LongestPrefix(prefix string) (string, interface{}, bool) {
 	return currentKey, current.getValue(), true
 }
 
-// Delete deletes a key and returns the previous value and if it was deleted
+// Delete deletes a key and returns the previous value and if it was deleted.
 func (t *Tree) Delete(key string) bool {
 	// TODO
 	return false
@@ -111,7 +114,7 @@ func (t *Tree) Walk(fn WalkFn) {
 	})
 }
 
-// WalkPrefix walks the Tree under a prefix
+// WalkPrefix walks the Tree under a prefix.
 func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	current, idx, split := t.find(prefix, nil)
 	if len(prefix) == idx+split {
@@ -138,7 +141,7 @@ func (t *Tree) WalkPath(path string, fn WalkFn) {
 	})
 }
 
-// Minimum returns the minimum value in the Tree
+// Minimum returns the minimum value in the Tree.
 func (t *Tree) Minimum() (string, interface{}, bool) {
 	current := &t.root
 
@@ -159,7 +162,7 @@ func (t *Tree) Minimum() (string, interface{}, bool) {
 	return string(ret), current.getValue(), current.isKey()
 }
 
-// Maximum returns the maximum value in the Tree
+// Maximum returns the maximum value in the Tree.
 func (t *Tree) Maximum() (string, interface{}, bool) {
 	current := &t.root
 
@@ -275,56 +278,50 @@ func (t *Tree) insert(key string, value interface{}, overwrite bool) bool {
 func (t *Tree) find(key string, fn func(string, *node) bool) (*node, int, int) {
 	current := &t.root
 
-	var i, j int
-	for len(current.key) > 0 && i < len(key) {
+	var idx int
+	for len(current.key) > 0 && idx < len(key) {
 		if fn != nil {
 			// call function if defined
-			if fn(key[:i], current) {
+			if fn(key[:idx], current) {
 				break
 			}
 		}
 
 		if current.isCompressed() {
 			// match as many chars as possible from the compressed key with the lookup key
-			for j = 0; j < len(current.key) && i < len(key); j++ {
-				if current.key[j] != key[i] {
-					break
-				}
+			if !strings.HasPrefix(key[idx:], current.key) {
+				i := sort.Search(len(current.key), func(i int) bool {
+					return !strings.HasPrefix(key[idx:], current.key[:i])
+				}) - 1
 
-				i += 1
+				return current, idx + i, i
 			}
 
-			if j != len(current.key) {
-				// not the entire compressed key matched with the lookup key - break
-				break
-			}
-
-			j = 0
+			idx += len(current.key)
+			current = current.children[0]
 		} else {
 			// find a child whose key is matching with the lookup key
-			j = sort.Search(len(current.key), func(idx int) bool {
-				return current.key[idx] >= key[i]
+			i := sort.Search(len(current.key), func(i int) bool {
+				return current.key[i] >= key[idx]
 			})
-			if j == len(current.key) || current.key[j] != key[i] {
+			if i == len(current.key) || current.key[i] != key[idx] {
 				// no matching child found - break
-				break
+				return current, idx, 0
 			}
 
-			i += 1
+			idx += 1
+			current = current.children[i]
 		}
-
-		current = current.children[j]
-		j = 0
 	}
 
-	if current.isLeaf() || (len(key) == i && j == 0) {
+	if current.isLeaf() || len(key) == idx {
 		if fn != nil {
 			// call function if defined
-			fn(key[:i], current)
+			fn(key[:idx], current)
 		}
 	}
 
-	return current, i, j
+	return current, idx, 0
 }
 
 func walk(start *node, fn func(string, *node) bool) {

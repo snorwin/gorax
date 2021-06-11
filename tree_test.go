@@ -12,16 +12,10 @@ import (
 )
 
 const (
-	LetterBytes      = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	LetterBytesSmall = "abcdef"
-
 	TestKeyLength   = 256
 	TestValueLength = 256
 
 	FuzzyTestSize = 1000
-
-	BenchmarkSamples  = 10
-	BenchmarkTreeSize = 100000
 )
 
 var _ = Describe("Tree", func() {
@@ -63,8 +57,8 @@ var _ = Describe("Tree", func() {
 
 			m := make(map[string]interface{}, size)
 			for j := 0; j < size; j++ {
-				key := randString(rand.Intn(TestKeyLength), LetterBytes)
-				value := randString(TestValueLength, LetterBytes)
+				key := randString(rand.Intn(TestKeyLength))
+				value := randString(TestValueLength)
 
 				_, expected := m[key]
 				m[key] = value
@@ -81,8 +75,8 @@ var _ = Describe("Tree", func() {
 
 			m := make(map[string]interface{}, size)
 			for j := 0; j < size; j++ {
-				key := randString(rand.Intn(TestKeyLength), LetterBytesSmall)
-				value := randString(TestValueLength, LetterBytes)
+				key := randString(rand.Intn(TestKeyLength))
+				value := randString(TestValueLength)
 
 				_, expected := m[key]
 				m[key] = value
@@ -94,29 +88,6 @@ var _ = Describe("Tree", func() {
 				Ω(t.Len()).Should(Equal(len(m)))
 			}
 		})
-		Measure("Benchmark", func(b Benchmarker) {
-			size := BenchmarkTreeSize
-
-			m := make(map[string]interface{}, size)
-			for i := 0; i < size; i++ {
-				m[randString(rand.Intn(TestKeyLength), LetterBytes)] = randString(rand.Intn(32), LetterBytes)
-			}
-
-			t = gorax.FromMap(m)
-
-			key := randString(rand.Intn(TestKeyLength), LetterBytes)
-			value := randString(rand.Intn(TestValueLength), LetterBytes)
-
-			runtime := b.Time("runtime", func() {
-				t.Insert(key, value)
-			})
-
-			actual, ok := t.Get(key)
-			Ω(ok).Should(BeTrue())
-			Ω(actual).Should(Equal(value))
-
-			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, BenchmarkSamples)
 	})
 	Context("Get", func() {
 		It("should_not_fail_if_empty", func() {
@@ -124,31 +95,6 @@ var _ = Describe("Tree", func() {
 			Ω(ok).Should(BeFalse())
 			Ω(value).Should(BeNil())
 		})
-		Measure("Benchmark", func(b Benchmarker) {
-			size := BenchmarkTreeSize
-
-			m := make(map[string]interface{}, size)
-			keys := make([]string, size)
-			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
-				m[keys[i]] = randString(rand.Intn(TestValueLength), LetterBytes)
-			}
-
-			t := gorax.FromMap(m)
-
-			key := keys[rand.Intn(len(keys))]
-
-			var value interface{}
-			var ok bool
-			runtime := b.Time("runtime", func() {
-				value, ok = t.Get(key)
-			})
-
-			Ω(ok).Should(BeTrue())
-			Ω(value).Should(Equal(m[key]))
-
-			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, BenchmarkSamples)
 	})
 	Context("WalkPrefix", func() {
 		var (
@@ -212,22 +158,22 @@ var _ = Describe("Tree", func() {
 		})
 		It("should_walk_prefix_fuzzy", func() {
 			for i := 0; i < FuzzyTestSize; i++ {
-				prefix := randString(rand.Intn(24), LetterBytes)
+				prefix := randString(rand.Intn(24))
 
 				size := 200
 				m := make(map[string]interface{}, 2*size)
 				expected := make(map[string]interface{})
 				for j := 0; j < size; j++ {
-					key := randString(rand.Intn(TestKeyLength), LetterBytes)
-					m[key] = randString(rand.Intn(TestValueLength), LetterBytes)
+					key := randString(rand.Intn(TestKeyLength))
+					m[key] = randString(rand.Intn(TestKeyLength))
 
 					if strings.HasPrefix(key, prefix) {
 						expected[key] = m[key]
 					}
 				}
 				for j := 0; j < size; j++ {
-					key := prefix + randString(rand.Intn(TestKeyLength), LetterBytes)
-					m[key] = randString(rand.Intn(TestValueLength), LetterBytes)
+					key := prefix + randString(rand.Intn(TestKeyLength))
+					m[key] = randString(rand.Intn(TestKeyLength))
 					expected[key] = m[key]
 				}
 
@@ -302,7 +248,7 @@ var _ = Describe("Tree", func() {
 			for i := 0; i < FuzzyTestSize; i++ {
 				slice := make([]string, 24)
 				for j := 0; j < len(slice); j++ {
-					slice[j] = randString(rand.Intn(TestKeyLength), LetterBytes)
+					slice[j] = randString(rand.Intn(TestKeyLength))
 				}
 				m := map[string]interface{}{}
 				for j := len(slice); j >= 0; j-- {
@@ -365,7 +311,7 @@ var _ = Describe("Tree", func() {
 
 			keys := make([]string, size)
 			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				keys[i] = randString(rand.Intn(TestKeyLength))
 				t.Insert(keys[i], "")
 			}
 			sort.Strings(keys)
@@ -373,24 +319,6 @@ var _ = Describe("Tree", func() {
 			Ω(key).Should(Equal(keys[0]))
 			Ω(ok).Should(BeTrue())
 		})
-		Measure("Benchmark", func(b Benchmarker) {
-			size := BenchmarkTreeSize
-
-			keys := make([]string, size)
-			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
-				t.Insert(keys[i], "")
-			}
-			sort.Strings(keys)
-
-			var key string
-			runtime := b.Time("runtime", func() {
-				key, _, _ = t.Minimum()
-			})
-			Ω(key).Should(Equal(keys[0]))
-
-			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, BenchmarkSamples)
 	})
 	Context("Maximum", func() {
 		var (
@@ -425,7 +353,7 @@ var _ = Describe("Tree", func() {
 
 			keys := make([]string, size)
 			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
+				keys[i] = randString(rand.Intn(TestKeyLength))
 				t.Insert(keys[i], "")
 			}
 			sort.Strings(keys)
@@ -433,24 +361,6 @@ var _ = Describe("Tree", func() {
 			Ω(key).Should(Equal(keys[len(keys)-1]))
 			Ω(ok).Should(BeTrue())
 		})
-		Measure("Benchmark", func(b Benchmarker) {
-			size := BenchmarkTreeSize
-
-			keys := make([]string, size)
-			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength), LetterBytes)
-				t.Insert(keys[i], "")
-			}
-			sort.Strings(keys)
-
-			var key string
-			runtime := b.Time("runtime", func() {
-				key, _, _ = t.Maximum()
-			})
-			Ω(key).Should(Equal(keys[len(keys)-1]))
-
-			b.RecordValueWithPrecision("runtime [μs]", float64(runtime.Microseconds()), "μs", 3)
-		}, BenchmarkSamples)
 	})
 	Context("LongestPrefix", func() {
 		var (
@@ -482,11 +392,3 @@ var _ = Describe("Tree", func() {
 		})
 	})
 })
-
-func randString(n int, bytes string) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = bytes[rand.Intn(len(bytes))]
-	}
-	return string(b)
-}
