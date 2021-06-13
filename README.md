@@ -1,4 +1,4 @@
-![gorax](gorax.svg)
+![gorax](gorax.png)
 
 [![GitHub Action](https://img.shields.io/badge/GitHub-Action-blue)](https://github.com/features/actions)
 [![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg)](https://pkg.go.dev/github.com/snorwin/gorax)
