@@ -51,6 +51,39 @@ var _ = Describe("Tree", func() {
 			Ω(value).Should(BeNil())
 		})
 	})
+	Context("Delete", func() {
+		It("should_not_fail_if_empty", func() {
+			value, ok := gorax.New().Delete("foo")
+			Ω(ok).Should(BeFalse())
+			Ω(value).Should(BeNil())
+		})
+	})
+	Context("DeletePrefix", func() {
+		It("should_not_fail_if_empty", func() {
+			count := gorax.New().DeletePrefix("foo")
+			Ω(count).Should(Equal(0))
+		})
+		It("should_delete_subtree", func() {
+			t := gorax.FromMap(map[string]interface{}{
+				"bar":    1,
+				"foof":   2,
+				"foofoo": 3,
+				"foobar": 4,
+			})
+			count := t.DeletePrefix("foo")
+			Ω(count).Should(Equal(3))
+		})
+		It("should_delete_subtree_and_prefix_itself", func() {
+			t := gorax.FromMap(map[string]interface{}{
+				"bar":    1,
+				"foo":    2,
+				"foofoo": 3,
+				"foobar": 4,
+			})
+			count := t.DeletePrefix("foo")
+			Ω(count).Should(Equal(3))
+		})
+	})
 	Context("WalkPrefix", func() {
 		var (
 			t *gorax.Tree
