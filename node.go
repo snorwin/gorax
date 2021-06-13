@@ -64,3 +64,24 @@ func (n *node) addCompressedChild(key string, child *node) {
 	n.key = key
 	n.children = []*node{child}
 }
+
+func (n *node) removeChild(child *node) {
+	if n.isCompressed() {
+		n.key = ""
+		n.children = nil
+		return
+	}
+
+	for idx := range n.children {
+		if n.children[idx] == child {
+			if idx+1 < len(n.children) {
+				n.children = append(n.children[:idx], n.children[idx+1:]...)
+				n.key = n.key[:idx] + n.key[idx+1:]
+			} else {
+				n.children = n.children[:idx]
+				n.key = n.key[:idx]
+			}
+			break
+		}
+	}
+}

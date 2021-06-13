@@ -11,9 +11,55 @@
 # gorax
 **gorax** is a Go [radix tree](https://en.wikipedia.org/wiki/Radix_tree) implementation inspired by the ANSI C [Rax](https://github.com/antirez/rax) radix tree.
 
-## Example Tree
-![example](example.svg)
+## Documentation
+The full documentation is available on [Godoc](https://pkg.go.dev/github.com/snorwin/gorax).
+
+## Performance
+The **gorax** `Insert`, `Delete` and `Get` are `O(k)` operations. In many cases, this can be faster than a hash table because the hash function is an `O(k)` operation too and in the worst case depending on how collisions are handled it may take even longer. Furthermore, hash tables have very poor cache locality.
+
+### Benchmark
+The benchmark demonstrates well that the insertion, deletion and get times are independent of the number of elements stored in the **gorax** radix tree. In average insert and operations are taking less than `500ns/op` measured on an 8 Core (11th Gen i7) Intel CPU.
+```
+goos: linux
+goarch: amd64
+pkg: github.com/snorwin/gorax
+cpu: 11th Gen Intel(R) Core(TM) i7-1160G7 @ 1.20GHz
+BenchmarkInsert1-8       	 2935486	       437.9 ns/op
+BenchmarkInsert10-8      	  284378	      4073 ns/op
+BenchmarkInsert100-8     	   33601	     36614 ns/op
+BenchmarkInsert1000-8    	    3181	    383915 ns/op
+BenchmarkInsert10000-8   	     268	   4245608 ns/op
+BenchmarkGet1-8          	10413225	       125.3 ns/op
+BenchmarkGet10-8         	 2489961	       466.6 ns/op
+BenchmarkGet100-8        	  306944	      3282 ns/op
+BenchmarkGet1000-8       	   60535	     31144 ns/op
+BenchmarkGet10000-8      	    5689	    358072 ns/op
+BenchmarkDelete1-8       	 6051354	     267.8 ns/op
+BenchmarkDelete10-8      	 2085792	       581.9 ns/op
+BenchmarkDelete100-8     	  342584	      3543 ns/op
+BenchmarkDelete1000-8    	   38193	     31167 ns/op
+BenchmarkDelete10000-8   	    3726	    326149 ns/op
+```
+## Examples
+### Find longest prefix
 ```go
+// Create a tree
+t := gorax.New()
+_ = t.Insert("foo", nil)
+_ = t.Insert("bar", 1)
+_ = t.Insert("foobar", 2)
+
+// Find the longest prefix match
+prefix, _, _ := t.LongestPrefix("foojin")
+fmt.Println(prefix)
+```
+```
+foo
+```
+
+### Create a gorax Tree from `map`
+```go
+// Create a tree
 t := gorax.FromMap(map[string]interface{}{
     "alligator":     nil,
     "alien":         1,
@@ -30,29 +76,13 @@ t := gorax.FromMap(map[string]interface{}{
     "rub":           "c",
     "ba":            "d",
 })
-```
 
-## Performance
-The **gorax** `Insert` and `Get` are `O(k)` operations. In many cases, this can be faster than a hash table because the hash function is an `O(k)` operation too and in the worst case depending on how collisions are handled it may take even longer. Furthermore, hash tables have very poor cache locality.
-
-### Benchmark
-The benchmark demonstrates well that the insertion and get times are independent of the number of elements stored in the **gorax** radix tree. In average insert and operations are taking less than `500ns/op` measured on an 8 Core (11th Gen i7) Intel CPU.
+// Convert to DOT graph
+fmt.Println(t.ToDOTGraph().String())
 ```
-goos: linux
-goarch: amd64
-pkg: github.com/snorwin/gorax
-cpu: 11th Gen Intel(R) Core(TM) i7-1160G7 @ 1.20GHz
-BenchmarkInsert1-8       	 2935486	       437.9 ns/op
-BenchmarkInsert10-8      	  284378	      4073 ns/op
-BenchmarkInsert100-8     	   33601	     36614 ns/op
-BenchmarkInsert1000-8    	    3181	    383915 ns/op
-BenchmarkInsert10000-8   	     268	   4245608 ns/op
-BenchmarkGet1-8          	10413225	       125.3 ns/op
-BenchmarkGet10-8         	 2489961	       466.6 ns/op
-BenchmarkGet100-8        	  306944	      3282 ns/op
-BenchmarkGet1000-8       	   60535	     31144 ns/op
-BenchmarkGet10000-8      	    5689	    358072 ns/op
-```
+#### [DOT Graph](example.dot) representation of the Tree
+![](example.svg)
+*(leaf nodes: blue color, compressed nodes: green color, key nodes: rectangular shape)*
 
 ## Trivia
 In Star Wars **gorax** are a seldom-seen species of humanoids of gigantic proportion that are native to the mountains of Endor.

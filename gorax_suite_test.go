@@ -13,19 +13,40 @@ func TestGorax(t *testing.T) {
 	RunSpecs(t, "Gorax Test Suite")
 }
 
-var letterRunes = [][]rune{
-	[]rune("abc"),
-	[]rune("abcdefghijklmnopqrstuvwxyz"),
-	[]rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"),
-	[]rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+{}:\\|\"<>?/.,';][=-'"),
-}
-
 func randString(n int) string {
-	runes := letterRunes[rand.Intn(len(letterRunes))]
+	letters := [][]rune{
+		[]rune("abc"),
+		[]rune("abcdefghijklmnopqrstuvwxyz"),
+		[]rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"),
+		[]rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+{}:\\|\"<>?/.,';][=-'"),
+	}
+	runes := letters[rand.Intn(len(letters))]
 
 	r := make([]rune, n)
 	for i := range r {
 		r[i] = runes[rand.Intn(len(runes))]
 	}
 	return string(r)
+}
+
+func randInteface() interface{} {
+	funcs := []func() interface{}{
+		func() interface{} {
+			return rand.Int()
+		},
+		func() interface{} {
+			return nil
+		},
+		func() interface{} {
+			return []bool{true, false}[rand.Intn(2)]
+		},
+		func() interface{} {
+			return randString(10)
+		},
+		func() interface{} {
+			return struct{ foo string }{"bar"}
+		},
+	}
+
+	return funcs[rand.Intn(len(funcs))]()
 }

@@ -1,21 +1,12 @@
 package gorax_test
 
 import (
-	"math/rand"
-	"sort"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/snorwin/gorax"
-)
-
-const (
-	TestKeyLength   = 256
-	TestValueLength = 256
-
-	FuzzyTestSize = 1000
 )
 
 var _ = Describe("Tree", func() {
@@ -51,42 +42,6 @@ var _ = Describe("Tree", func() {
 			Ω(ok).Should(BeTrue())
 			Ω(value).Should(Equal("new"))
 			Ω(t.Len()).Should(Equal(1))
-		})
-		It("should_insert_key_value_fuzzy", func() {
-			size := FuzzyTestSize
-
-			m := make(map[string]interface{}, size)
-			for j := 0; j < size; j++ {
-				key := randString(rand.Intn(TestKeyLength))
-				value := randString(TestValueLength)
-
-				_, expected := m[key]
-				m[key] = value
-
-				actual := !t.Insert(key, value)
-				Ω(actual).Should(Equal(expected))
-
-				Ω(t.ToMap()).Should(Equal(m))
-				Ω(t.Len()).Should(Equal(len(m)))
-			}
-		})
-		It("should_insert_limited_bytes_key_value_fuzzy", func() {
-			size := FuzzyTestSize
-
-			m := make(map[string]interface{}, size)
-			for j := 0; j < size; j++ {
-				key := randString(rand.Intn(TestKeyLength))
-				value := randString(TestValueLength)
-
-				_, expected := m[key]
-				m[key] = value
-
-				actual := !t.Insert(key, value)
-				Ω(actual).Should(Equal(expected))
-
-				Ω(t.ToMap()).Should(Equal(m))
-				Ω(t.Len()).Should(Equal(len(m)))
-			}
 		})
 	})
 	Context("Get", func() {
@@ -156,39 +111,6 @@ var _ = Describe("Tree", func() {
 			Ω(len(actual)).Should(Equal(1))
 			Ω(actual["foo"]).Should(Equal(1))
 		})
-		It("should_walk_prefix_fuzzy", func() {
-			for i := 0; i < FuzzyTestSize; i++ {
-				prefix := randString(rand.Intn(24))
-
-				size := 200
-				m := make(map[string]interface{}, 2*size)
-				expected := make(map[string]interface{})
-				for j := 0; j < size; j++ {
-					key := randString(rand.Intn(TestKeyLength))
-					m[key] = randString(rand.Intn(TestKeyLength))
-
-					if strings.HasPrefix(key, prefix) {
-						expected[key] = m[key]
-					}
-				}
-				for j := 0; j < size; j++ {
-					key := prefix + randString(rand.Intn(TestKeyLength))
-					m[key] = randString(rand.Intn(TestKeyLength))
-					expected[key] = m[key]
-				}
-
-				t = gorax.FromMap(m)
-
-				actual := make(map[string]interface{})
-				t.WalkPrefix(prefix, func(key string, value interface{}) bool {
-					actual[key] = value
-
-					return false
-				})
-
-				Ω(actual).Should(Equal(expected))
-			}
-		})
 	})
 	Context("WalkPath", func() {
 		var (
@@ -244,39 +166,6 @@ var _ = Describe("Tree", func() {
 			Ω(len(actual)).Should(Equal(1))
 			Ω(actual[""]).Should(Equal(0))
 		})
-		It("should_walk_path_fuzzy", func() {
-			for i := 0; i < FuzzyTestSize; i++ {
-				slice := make([]string, 24)
-				for j := 0; j < len(slice); j++ {
-					slice[j] = randString(rand.Intn(TestKeyLength))
-				}
-				m := map[string]interface{}{}
-				for j := len(slice); j >= 0; j-- {
-					m[strings.Join(slice[:j], "")] = i
-				}
-
-				t = gorax.FromMap(m)
-
-				path := strings.Join(slice, "")
-				for j := 0; j <= len(path); j++ {
-					expected := map[string]interface{}{}
-					for k, v := range m {
-						if strings.HasPrefix(path[:j], k) {
-							expected[k] = v
-						}
-					}
-
-					actual := make(map[string]interface{})
-					t.WalkPath(path[:j], func(key string, value interface{}) bool {
-						actual[key] = value
-
-						return false
-					})
-
-					Ω(actual).Should(Equal(expected))
-				}
-			}
-		})
 	})
 	Context("Minimum", func() {
 		var (
@@ -306,19 +195,6 @@ var _ = Describe("Tree", func() {
 			Ω(value).Should(BeNil())
 			Ω(ok).Should(BeTrue())
 		})
-		It("should_find_minimum_fuzzy", func() {
-			size := FuzzyTestSize
-
-			keys := make([]string, size)
-			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength))
-				t.Insert(keys[i], "")
-			}
-			sort.Strings(keys)
-			key, _, ok := t.Minimum()
-			Ω(key).Should(Equal(keys[0]))
-			Ω(ok).Should(BeTrue())
-		})
 	})
 	Context("Maximum", func() {
 		var (
@@ -346,19 +222,6 @@ var _ = Describe("Tree", func() {
 			key, value, ok := t.Maximum()
 			Ω(key).Should(Equal("foofoo"))
 			Ω(value).Should(Equal(3))
-			Ω(ok).Should(BeTrue())
-		})
-		It("should_find_maximum_fuzzy", func() {
-			size := FuzzyTestSize
-
-			keys := make([]string, size)
-			for i := 0; i < size; i++ {
-				keys[i] = randString(rand.Intn(TestKeyLength))
-				t.Insert(keys[i], "")
-			}
-			sort.Strings(keys)
-			key, _, ok := t.Maximum()
-			Ω(key).Should(Equal(keys[len(keys)-1]))
 			Ω(ok).Should(BeTrue())
 		})
 	})

@@ -51,6 +51,25 @@ func BenchmarkGet10000(b *testing.B) {
 	benchmarkGet(b, 10000)
 }
 
+func BenchmarkDelete1(b *testing.B) {
+	benchmarkDelete(b, 1)
+}
+
+func BenchmarkDelete10(b *testing.B) {
+	benchmarkDelete(b, 10)
+}
+
+func BenchmarkDelete100(b *testing.B) {
+	benchmarkDelete(b, 100)
+}
+
+func BenchmarkDelete1000(b *testing.B) {
+	benchmarkDelete(b, 1000)
+}
+func BenchmarkDelete10000(b *testing.B) {
+	benchmarkDelete(b, 10000)
+}
+
 func benchmarkInsert(b *testing.B, size int) {
 	keys := make([]string, size)
 	for i := 0; i < size; i++ {
@@ -89,6 +108,29 @@ func benchmarkGet(b *testing.B, size int) {
 		b.StartTimer()
 		for j := 0; j < size; j++ {
 			t.Get(keys[j])
+		}
+		b.StopTimer()
+	}
+}
+
+func benchmarkDelete(b *testing.B, size int) {
+	keys := make([]string, size)
+	for i := 0; i < size; i++ {
+		keys[i] = randString(rand.Intn(BenchmarkMaxKeySize))
+	}
+
+	t := gorax.New()
+	for j := 0; j < size; j++ {
+		t.Insert(keys[j], "")
+	}
+
+	b.StopTimer()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		for j := 0; j < size; j++ {
+			t.Delete(keys[j])
 		}
 		b.StopTimer()
 	}

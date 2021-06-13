@@ -87,16 +87,54 @@ func (t *Tree) LongestPrefix(prefix string) (string, interface{}, bool) {
 }
 
 // Delete deletes a key and returns the previous value and if it was deleted.
-func (t *Tree) Delete(key string) bool {
-	// TODO
-	return false
+func (t *Tree) Delete(key string) (interface{}, bool) {
+	var nodes []*node
+	current, idx, split := t.find(key, func(_ string, n *node) bool {
+		nodes = append(nodes, n)
+		return false
+	})
+	if idx != len(key) || (current.isCompressed() && split != 0) || !current.isKey() {
+		return nil, false
+	}
+
+	value := current.getValue()
+	current.value = nil
+
+	t.size -= 1
+
+	t.delete(nodes[:len(nodes)-1], current)
+
+	return value, true
 }
 
 // DeletePrefix deletes the subtree under a prefix Returns how many nodes were deleted.
 // Use this to delete large subtrees efficiently.
 func (t *Tree) DeletePrefix(prefix string) int {
-	// TODO
-	return 0
+	var counter int
+
+	var nodes []*node
+	current, idx, split := t.find(prefix, func(_ string, n *node) bool {
+		nodes = append(nodes, n)
+		return false
+	})
+
+	if len(prefix) == idx+split {
+		walk(current, func(key string, node *node) bool {
+			if node.isKey() {
+				counter += 1
+			}
+			return false
+		})
+
+		t.size -= counter
+
+		current.key = ""
+		current.children = nil
+
+		t.delete(nodes, current)
+	}
+
+	return counter
 }
 
 // WalkFn is used when walking the Tree. Takes a key and value, returning 'true' if iteration should be terminated.
@@ -322,6 +360,71 @@ func (t *Tree) find(key string, fn func(string, *node) bool) (*node, int, int) {
 	}
 
 	return current, idx, 0
+}
+
+func (t *Tree) delete(nodes []*node, current *node) {
+	var trycompress bool
+	if len(current.children) == 0 {
+		var child *node
+		for current != &t.root {
+			child = current
+
+			current = nodes[len(nodes)-1]
+			nodes = nodes[:len(nodes)-1]
+
+			if current.isKey() || (!current.isCompressed() && len(current.children) != 1) {
+				break
+			}
+		}
+		if child != nil {
+			current.removeChild(child)
+		}
+
+		if len(current.children) == 1 && !current.isKey() {
+			trycompress = true
+		}
+	} else if len(current.children) == 1 {
+		trycompress = true
+	}
+
+	if trycompress {
+		var parent *node
+		for {
+			if len(nodes) == 0 {
+				parent = nil
+				break
+			}
+			parent = nodes[len(nodes)-1]
+			nodes = nodes[:len(nodes)-1]
+			if parent.isKey() || (!parent.isCompressed() && len(parent.children) != 1) {
+				break
+			}
+			current = parent
+		}
+
+		start := current
+
+		newChild := node{}
+		for len(current.children) != 0 {
+			newChild.key += current.key
+			newChild.children = current.children
+			current = current.children[len(current.children)-1]
+			if current.isKey() || (!current.isCompressed() && len(current.children) != 1) {
+				break
+			}
+		}
+		if newChild.key != "" {
+			if parent != nil {
+				for i, child := range parent.children {
+					if child == start {
+						parent.children[i] = &newChild
+					}
+				}
+			} else {
+				t.root = newChild
+			}
+		}
+	}
 }
 
 func walk(start *node, fn func(string, *node) bool) {

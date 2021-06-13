@@ -14,7 +14,7 @@ import (
 var example string
 
 var _ = Describe("Tree", func() {
-	Context("ToDotGraph", func() {
+	Context("ToDOTGraph", func() {
 		It("should_generate_graph_regression_test", func() {
 			t := gorax.FromMap(map[string]interface{}{
 				"alligator":     nil,
@@ -33,7 +33,7 @@ var _ = Describe("Tree", func() {
 				"ba":            "d",
 			})
 
-			Ω(strings.ReplaceAll(t.ToDotGraph().String(), "\t\n", "\n")).Should(Equal(example))
+			Ω(strings.ReplaceAll(t.ToDOTGraph().String(), "\t\n", "\n")).Should(Equal(example))
 		})
 	})
 })
