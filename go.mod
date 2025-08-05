@@ -3,7 +3,7 @@ module github.com/snorwin/gorax
 go 1.23.0
 
 require (
-	github.com/emicklei/dot v1.8.0
+	github.com/emicklei/dot v1.9.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.37.0
 )
