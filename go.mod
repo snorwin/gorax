@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/emicklei/dot v1.10.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.38.3
+	github.com/onsi/gomega v1.39.0
 )
 
 require (
